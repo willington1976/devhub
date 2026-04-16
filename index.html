@@ -224,9 +224,13 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--t1);font-
     <div class="lock-sub">project control system</div>
     <div class="lock-sep"></div>
     <div class="lock-lbl">master key</div>
-    <input id="mi" class="lock-inp" type="password" placeholder="••••••••" autocomplete="off"/>
+    <div style="width:100%;position:relative">
+      <input id="mi" class="lock-inp" type="password" placeholder="••••••••" autocomplete="off" style="padding-right:40px"/>
+      <button id="eye-btn" onclick="toggleEye()" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--t3);cursor:pointer;font-size:16px;padding:2px;transition:color .15s" onmouseover="this.style.color='var(--t2)'" onmouseout="this.style.color='var(--t3)'">◉</button>
+    </div>
     <button class="lock-btn" onclick="unlock()">acceder →</button>
     <div id="le" class="lock-err"></div>
+    <button onclick="resetKey()" style="background:none;border:none;font-family:var(--mono);font-size:9px;color:var(--t3);cursor:pointer;text-decoration:underline;padding:0" onmouseover="this.style.color='var(--ro)'" onmouseout="this.style.color='var(--t3)'">¿olvidaste tu clave? resetear</button>
   </div>
 </div>
 
@@ -362,12 +366,24 @@ let MK='',EID=null,CF='all';
 const RV=new Set();
 
 // LOCK
+function toggleEye(){
+  const inp=document.getElementById('mi');
+  const btn=document.getElementById('eye-btn');
+  if(inp.type==='password'){inp.type='text';btn.textContent='◡'}
+  else{inp.type='password';btn.textContent='◉'}
+}
 function unlock(){
   const k=document.getElementById('mi').value.trim();
   if(!k){le('ingresa una clave');return}
-  const st=localStorage.getItem('dh_mk');
-  if(!st){localStorage.setItem('dh_mk',enc('devhub_ok',k));MK=k;boot()}
-  else{const v=dec(st,k);if(v==='devhub_ok'){MK=k;boot()}else le('clave incorrecta')}
+  const st=localStorage.getItem('dh_mk2');
+  if(!st){localStorage.setItem('dh_mk2',enc('devhub_ok',k));MK=k;boot()}
+  else{const v=dec(st,k);if(v==='devhub_ok'){MK=k;boot()}else le('clave incorrecta — o usa "resetear" si olvidaste tu clave')}
+}
+function resetKey(){
+  if(!confirm('¿Resetear clave maestra? Se borrarán tus cuentas cifradas (los proyectos se conservan).'))return;
+  localStorage.removeItem('dh_mk2');localStorage.removeItem('dh_mk');localStorage.removeItem('dh_a');
+  document.getElementById('le').textContent='Clave reseteada. Ingresa una nueva.';
+  document.getElementById('mi').value='';
 }
 function le(m){document.getElementById('le').textContent=m}
 document.getElementById('mi').addEventListener('keydown',e=>{if(e.key==='Enter')unlock()})
@@ -413,9 +429,13 @@ function kpiFilter(type, card){
   // scroll to table
   document.querySelector('.panel').scrollIntoView({behavior:'smooth',block:'nearest'});
 }
+
+// FILTER
+function setF(f,btn){
   CF=f;
   document.querySelectorAll('.fchip').forEach(b=>b.classList.remove('on'));
   btn.classList.add('on');
+  document.querySelectorAll('.kpi').forEach(k=>k.classList.remove('active-kpi'));
   render();
 }
 
@@ -516,32 +536,4 @@ function saveA(){
   sa(list);closeAM();renderA();
 }
 function delA(id){if(!confirm('¿Eliminar?'))return;sa(ga().filter(a=>a.id!==id));renderA()}
-function tvRV(id){RV.has(id)?RV.delete(id):RV.add(id);renderA()}
-
-const TC={github:'tg',supabase:'ts',vercel:'tv',netlify:'tn',otro:'to'};
-function renderA(){
-  const list=ga();
-  const el=document.getElementById('agrid');
-  if(!list.length){el.innerHTML=`<div class="empty" style="grid-column:1/-1"><div class="empty-ico">⬡</div><div class="empty-txt">sin cuentas</div></div>`;return}
-  el.innerHTML=list.map((a,i)=>{
-    const show=RV.has(a.id);
-    const masked='•'.repeat(Math.min((a.key||'').length,20)||8);
-    return`<div class="acard ${TC[a.type]||'to'}" style="animation-delay:${i*30}ms">
-      <div class="ac-type">${a.type}</div>
-      <div class="ac-name">${a.name}</div>
-      <div class="ac-email">${a.email||'—'}</div>
-      <div class="ac-kw"><div class="ac-kl">token / key</div><div class="ac-kv ${show?'':'masked'}">${show?(a.key||'—'):masked}</div></div>
-      <div class="ac-acts">
-        <button class="rvb" onclick="tvRV('${a.id}')">${show?'ocultar':'mostrar'}</button>
-        ${a.url?`<a class="ac-link" href="${a.url}" target="_blank" rel="noopener">dashboard ↗</a>`:''}
-        <button class="acdel" onclick="delA('${a.id}')" style="margin-left:${a.url?'0':'auto'}">×</button>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-document.getElementById('pm').addEventListener('click',e=>{if(e.target===e.currentTarget)closePM()});
-document.getElementById('am').addEventListener('click',e=>{if(e.target===e.currentTarget)closeAM()});
-</script>
-</body>
-</html>
+function tvRV(id){R
