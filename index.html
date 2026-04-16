@@ -536,4 +536,32 @@ function saveA(){
   sa(list);closeAM();renderA();
 }
 function delA(id){if(!confirm('¿Eliminar?'))return;sa(ga().filter(a=>a.id!==id));renderA()}
-function tvRV(id){R
+function tvRV(id){RV.has(id)?RV.delete(id):RV.add(id);renderA()}
+
+const TC={github:'tg',supabase:'ts',vercel:'tv',netlify:'tn',otro:'to'};
+function renderA(){
+  const list=ga();
+  const el=document.getElementById('agrid');
+  if(!list.length){el.innerHTML=`<div class="empty" style="grid-column:1/-1"><div class="empty-ico">⬡</div><div class="empty-txt">sin cuentas</div></div>`;return}
+  el.innerHTML=list.map((a,i)=>{
+    const show=RV.has(a.id);
+    const masked='•'.repeat(Math.min((a.key||'').length,20)||8);
+    return`<div class="acard ${TC[a.type]||'to'}" style="animation-delay:${i*30}ms">
+      <div class="ac-type">${a.type}</div>
+      <div class="ac-name">${a.name}</div>
+      <div class="ac-email">${a.email||'—'}</div>
+      <div class="ac-kw"><div class="ac-kl">token / key</div><div class="ac-kv ${show?'':'masked'}">${show?(a.key||'—'):masked}</div></div>
+      <div class="ac-acts">
+        <button class="rvb" onclick="tvRV('${a.id}')">${show?'ocultar':'mostrar'}</button>
+        ${a.url?`<a class="ac-link" href="${a.url}" target="_blank" rel="noopener">dashboard ↗</a>`:''}
+        <button class="acdel" onclick="delA('${a.id}')" style="margin-left:${a.url?'0':'auto'}">×</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+document.getElementById('pm').addEventListener('click',e=>{if(e.target===e.currentTarget)closePM()});
+document.getElementById('am').addEventListener('click',e=>{if(e.target===e.currentTarget)closeAM()});
+</script>
+</body>
+</html>
