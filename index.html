@@ -78,8 +78,10 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--t1);font-
 .dash{display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:auto;gap:10px}
 
 /* KPI CARDS row */
-.kpi{background:var(--bg1);border:1px solid var(--b1);border-radius:12px;padding:14px 16px;position:relative;overflow:hidden;transition:border-color .2s}
-.kpi:hover{border-color:var(--b2)}
+.kpi{background:var(--bg1);border:1px solid var(--b1);border-radius:12px;padding:14px 16px;position:relative;overflow:hidden;transition:border-color .2s,transform .15s;cursor:pointer;user-select:none}
+.kpi:hover{border-color:var(--b2);transform:translateY(-1px)}
+.kpi:active{transform:translateY(0)}
+.kpi.active-kpi{border-color:var(--b3);box-shadow:inset 0 0 0 1px var(--b2)}
 .kpi::before{content:'';position:absolute;top:-30px;right:-30px;width:80px;height:80px;border-radius:50%;filter:blur(25px);opacity:.25}
 .kpi-cy::before{background:var(--cy)}
 .kpi-vi::before{background:var(--vi)}
@@ -262,25 +264,25 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--t1);font-
 
       <!-- KPI ROW -->
       <div class="dash" style="margin-bottom:10px">
-        <div class="kpi kpi-cy" style="animation-delay:0ms">
+        <div class="kpi kpi-cy" style="animation-delay:0ms" onclick="kpiFilter('all',this)" id="kpi-card-all">
           <div class="kpi-lbl">total proyectos</div>
           <div class="kpi-val" id="kpi-total">0</div>
           <div class="kpi-sub"><span id="kpi-pct-done">0%</span><span>completados</span></div>
           <div class="kpi-bar"><div class="kpi-fill" id="kpi-bar-done" style="width:0%"></div></div>
         </div>
-        <div class="kpi kpi-vi" style="animation-delay:50ms">
+        <div class="kpi kpi-vi" style="animation-delay:50ms" onclick="kpiFilter('progress',this)" id="kpi-card-progress">
           <div class="kpi-lbl">en progreso</div>
           <div class="kpi-val" id="kpi-progress">0</div>
           <div class="kpi-sub"><span id="kpi-avg">—</span><span>avance promedio</span></div>
           <div class="kpi-bar"><div class="kpi-fill" id="kpi-bar-prog" style="width:0%"></div></div>
         </div>
-        <div class="kpi kpi-em" style="animation-delay:100ms">
+        <div class="kpi kpi-em" style="animation-delay:100ms" onclick="kpiFilter('repos',this)" id="kpi-card-repos">
           <div class="kpi-lbl">repos conectados</div>
           <div class="kpi-val" id="kpi-repos">0</div>
           <div class="kpi-sub"><span id="kpi-deploys">0</span><span>con deploy</span></div>
           <div class="kpi-bar"><div class="kpi-fill" id="kpi-bar-repos" style="width:0%"></div></div>
         </div>
-        <div class="kpi kpi-am" style="animation-delay:150ms">
+        <div class="kpi kpi-am" style="animation-delay:150ms" onclick="kpiFilter('blocked',this)" id="kpi-card-blocked">
           <div class="kpi-lbl">bloqueados</div>
           <div class="kpi-val" id="kpi-blocked">0</div>
           <div class="kpi-sub"><span id="kpi-review">0</span><span>por revisar</span></div>
@@ -393,8 +395,24 @@ function showTab(t,btn){
   if(btn)btn.classList.add('on');
 }
 
-// FILTER
-function setF(f,btn){
+// KPI CARD CLICK → filter
+function kpiFilter(type, card){
+  // highlight card
+  document.querySelectorAll('.kpi').forEach(k=>k.classList.remove('active-kpi'));
+  card.classList.add('active-kpi');
+  // map kpi type to filter
+  const map={all:'all',progress:'progress',blocked:'blocked',repos:'all'};
+  const f=map[type]||'all';
+  // sync fchip UI
+  document.querySelectorAll('.fchip').forEach(b=>b.classList.remove('on'));
+  const chip=document.querySelector(`.fchip[onclick="setF('${f}',this)"]`);
+  if(chip)chip.classList.add('on');
+  // if repos → filter only projects with repo
+  if(type==='repos'){CF='repos';render();}
+  else{CF=f;render();}
+  // scroll to table
+  document.querySelector('.panel').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
   CF=f;
   document.querySelectorAll('.fchip').forEach(b=>b.classList.remove('on'));
   btn.classList.add('on');
@@ -441,7 +459,7 @@ function at(ok,lbl){return`<span class="ac ${ok===null?'ac-na':ok?'ac-ok':'ac-ba
 
 function render(){
   const all=gp();
-  const list=CF==='all'?all:all.filter(p=>p.status===CF);
+  const list=CF==='all'?all:CF==='repos'?all.filter(p=>p.repo):all.filter(p=>p.status===CF);
   const el=document.getElementById('plist');
   if(!list.length){el.innerHTML=`<div class="empty"><div class="empty-ico">⬡</div><div class="empty-txt">sin proyectos${CF!=='all'?' en este estado':''}</div></div>`;kpis();return}
   el.innerHTML=list.map((p,i)=>{
